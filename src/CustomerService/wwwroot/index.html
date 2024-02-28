@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Customers</title>
+    <style>
+        table tbody::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tbd {
+            display: block;
+            text-align: left;
+            height: 500px;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+        }
+            .table_info{
+                width:55%;
+            }
+        .table_info table{
+            width: 100%;
+        }
+            .table_info table thead,
+            .tbd tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+                text-align:left;
+            }
+    </style>
+    <script>
+        function loadLeaderBoardByRank() {
+            var startRank = document.getElementById('start-rank').value;
+            var endRank = document.getElementById('end-rank').value;
+            var url = 'leaderboard';
+            if (startRank === "") startRank = "1";
+            url += '?start=' + startRank;
+            if (!(endRank === "")) url += '&end=' + endRank;
+            fetch(url)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log(data);
+                    appendDataToTable(data);
+                })
+                .catch(function (error) {
+                    console.error("Error: ", error);
+                });
+        }
+
+        function loadLeaderBoardById() {
+            var id = document.getElementById('search-customer-id').value;
+            var high = document.getElementById('high-rank-count').value;
+            var low = document.getElementById('low-rank-count').value;
+
+            if (id === '') {
+                alert('Please input the customer id');
+                document.getElementById('search-customer-id').focus();
+            }
+            if (high === '') {
+                high = '0';
+            }
+            if (low === '') {
+                low = '0';
+            }
+
+            fetch('leaderboard/' + id + '?high=' + high + '&low=' + low)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log(data);
+                    appendDataToTable(data);
+                })
+                .catch(function (error) {
+                    console.error("Error: ", error);
+                });
+        }
+
+        function updateCustomer() {
+            var id = document.getElementById('upt-customer-id').value;
+            var score = document.getElementById('upt-customer-score').value;
+
+            if (id === '') {
+                alert('Please input the customer id');
+                document.getElementById('upt-customer-id').focus();
+            } else if (score === '') {
+                alert('Please input the customer score');
+                document.getElementById('upt-customer-score').focus();
+            }
+
+
+            fetch('customer/' + id + '/score/' + score, { method: 'post' })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log(data);
+                    loadLeaderBoardByRank();
+                })
+                .catch(function (error) {
+                    console.error("Error: ", error);
+                });
+        }
+
+        function appendDataToTable(data) {
+            var str = '';
+            if (data.length > 0) {
+                for (let i = 0; i < data.length; i++) {
+                    str += '<tr>';
+                    str += '<td>' + data[i]['customerId'] + '</td>';
+                    str += '<td>' + data[i]['score'] + '</td>';
+                    str += '<td>' + data[i]['rank'] + '</td>';
+                    str += '</tr>';
+                }
+            } else {
+                str = '<tr><td colspan="3">There is no data</td></tr>';
+            }
+            document.getElementById('tb-leader-boards').innerHTML = str;
+        }
+
+        function initCustomers() {
+            var total = document.getElementById('init-number').value;
+            for (var i = 0; i < total; i++) {
+                var min = 1;
+                var max = total * 10;
+                var randomId = Math.floor(Math.random() * (max - min + 1)) + min;
+
+                var minScore = -1000;
+                var maxScore = 1000;
+                var randomScore = Math.floor(Math.random() * (maxScore - minScore + 1)) + minScore;
+
+                fetch('customer/' + randomId + '/score/' + randomScore, { method: 'post' })
+                    .then(function (response) {
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        console.log(data);
+                    })
+                    .catch(function (error) {
+                        console.error("Error: ", error);
+                    });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            loadLeaderBoardByRank();
+        });
+
+
+    </script>
+</head>
+<body>
+    <div>
+        <p> <input id="upt-customer-id" type="number" style="width:300px;" placeholder="Please input the customer id" /></p>
+        <p> <input id="upt-customer-score" type="number" style="width:300px;" placeholder="Please input the customer score" /></p>
+        <p> <button onclick="javascript: updateCustomer();">Update Customer</button></p>
+        <p><input id="init-number" type="number" style="width:120px;" placeholder="Number of data" /> <button onclick="javascript: initCustomers();">Init Data</button></p>
+    </div>
+    <hr />
+    <div>
+        <p>
+            Get Rank From <input id="start-rank" type="number" style="width:180px;" placeholder="Please input the start rank" />
+            To <input id="end-rank" type="number" style="width:180px;" placeholder="Please input the end rank" />&nbsp;&nbsp;<button onclick="javascript: loadLeaderBoardByRank();">Search</button>
+        </p>
+        <p>
+            Get By Customer Id:<input id="search-customer-id" type="number" style="width:190px;" placeholder="Please input the customer id" />
+            High Count:<input id="high-rank-count" value="0" type="number" style="width: 180px;" placeholder="Please input the number" />
+            Lower Count:<input id="low-rank-count" value="0" type="number" style="width: 180px;" placeholder="Please input the number" />&nbsp;&nbsp;<button onclick="javascript: loadLeaderBoardById();">Search</button>
+        </p>
+        <div class="table_info">
+            <table rules="all">
+                <thead>
+                    <tr>
+                        <th colspan="3">Leader Boards</th>
+                    </tr>
+                    <tr>
+                        <th>Customer Id</th>
+                        <th>Score</th>
+                        <th>Rank</th>
+                    </tr>
+                </thead>
+                <tbody class="tbd" id="tb-leader-boards">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

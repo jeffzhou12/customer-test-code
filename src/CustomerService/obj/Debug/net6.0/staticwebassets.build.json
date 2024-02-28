@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "Hash": "YiSqjmHeRUlvlfG+AKkg0oc3k4XdsFDPqygtYunJj1Q=",
+  "Source": "CustomerService",
+  "BasePath": "_content/CustomerService",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "CustomerService\\wwwroot",
+      "Source": "CustomerService",
+      "ContentRoot": "C:\\Users\\86191\\source\\repos\\Customers\\CustomerService\\wwwroot\\",
+      "BasePath": "_content/CustomerService",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\86191\\source\\repos\\Customers\\CustomerService\\wwwroot\\index.html",
+      "SourceId": "CustomerService",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\86191\\source\\repos\\Customers\\CustomerService\\wwwroot\\",
+      "BasePath": "_content/CustomerService",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\index.html"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CustomerService</name>
+    </assembly>
+    <members>
+        <member name="T:CustomerService.Contracts.ICustomersService">
+            <summary>
+            The Customer data service
+            </summary>
+        </member>
+        <member name="M:CustomerService.Contracts.ICustomersService.CreateOrUpdateAsync(System.Int32,System.Int32)">
+            <summary>
+            Create or update customer
+            </summary>
+            <param name="id">the customer id</param>
+            <param name="score">the score</param>
+            <returns>the newest score</returns>
+        </member>
+        <member name="M:CustomerService.Contracts.ICustomersService.GetByRanksAsync(System.Int32,System.Int32)">
+            <summary>
+            Get customers by rank range
+            </summary>
+            <param name="start">start rank</param>
+            <param name="end">end rank</param>
+            <returns>customer data set</returns>
+        </member>
+        <member name="M:CustomerService.Contracts.ICustomersService.GetByIdAndNeighborsAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Get customer by id and load the neighbors
+            </summary>
+            <param name="id">customer id</param>
+            <param name="high">number of neighbors whose rank is higher than the customer.</param>
+            <param name="low">number of neighbors whose rank is lower than the customer.</param>
+            <returns></returns>
+        </member>
+        <member name="T:CustomerService.Controllers.CustomersController">
+            <summary>
+            The customer service enpoint
+            </summary>
+        </member>
+        <member name="M:CustomerService.Controllers.CustomersController.#ctor(CustomerService.Contracts.ICustomersService)">
+            <summary>
+            The constructor
+            </summary>
+            <param name="customerService"></param>
+        </member>
+        <member name="M:CustomerService.Controllers.CustomersController.UpdateAsync(System.Int32,System.Int32)">
+            <summary>
+            Update customer score
+            </summary>
+            <param name="customerid">customer id</param>
+            <param name="score">score</param>
+            <returns>Current score after update</returns>
+        </member>
+        <member name="T:CustomerService.Controllers.LeaderBoardsController">
+             <summary>
+            The leader board service enpoint
+            </summary>
+        </member>
+        <member name="M:CustomerService.Controllers.LeaderBoardsController.#ctor(CustomerService.Contracts.ICustomersService)">
+            <summary>
+            The constructor
+            </summary>
+            <param name="customerService"></param>
+        </member>
+        <member name="M:CustomerService.Controllers.LeaderBoardsController.GetByRanksAsync(System.Int32,System.Int32)">
+            <summary>
+            Get customers by rank
+            </summary>
+            <param name="start">start rank, included in response if exists</param>
+            <param name="end">end rank, included in response if exists</param>
+            <returns>All eligible customers</returns>
+        </member>
+        <member name="M:CustomerService.Controllers.LeaderBoardsController.GetByIdAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Get customers by customerid
+            </summary>
+            <param name="customerid">customer id</param>
+            <param name="high">number of neighbors whose rank is higher than the specified customer.</param>
+            <param name="low">number of neighbors whose rank is lower than the specified customer.</param>
+            <returns>All eligible customers</returns>
+        </member>
+        <member name="T:CustomerService.Services.CustomersService">
+            <summary>
+            The customer service interface implementation
+            </summary>
+        </member>
+        <member name="M:CustomerService.Services.CustomersService.CreateOrUpdateAsync(System.Int32,System.Int32)">
+            <summary>
+            Create or update customer
+            </summary>
+            <param name="id">the customer id</param>
+            <param name="score">the score</param>
+            <returns>the newest score</returns>
+        </member>
+        <member name="M:CustomerService.Services.CustomersService.GetByRanksAsync(System.Int32,System.Int32)">
+            <summary>
+            Get customers by rank range
+            </summary>
+            <param name="start">start rank</param>
+            <param name="end">end rank</param>
+            <returns>customer data set</returns>
+        </member>
+        <member name="M:CustomerService.Services.CustomersService.GetByIdAndNeighborsAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Get customer by id and load the neighbors
+            </summary>
+            <param name="id">customer id</param>
+            <param name="high">number of neighbors whose rank is higher than the customer.</param>
+            <param name="low">number of neighbors whose rank is lower than the customer.</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
