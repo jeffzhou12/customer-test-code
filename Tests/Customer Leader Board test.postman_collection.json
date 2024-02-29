@@ -1,0 +1,280 @@
+{
+	"info": {
+		"_postman_id": "2ae78b02-a809-43a6-81a6-db77c9512b77",
+		"name": "Customer Leader Board test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33255825"
+	},
+	"item": [
+		{
+			"name": "UpdateCustomers",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"function GetRandomId(Min,Max)\r",
+							"{\r",
+							"var Range = Max - Min;\r",
+							"var Rand = Math.random();\r",
+							"return(Min + Math.round(Rand * Range));\r",
+							"}\r",
+							"\r",
+							"function GetRandomScore(Min,Max)\r",
+							"{\r",
+							"var Range = Max - Min;\r",
+							"var Rand = Math.random();\r",
+							"return(Min + Math.round(Rand * Range));\r",
+							"}\r",
+							"\r",
+							"var id = GetRandomId(1,999999999);\r",
+							"var score = GetRandomId(-1000,1000);\r",
+							"pm.environment.set('id',id);\r",
+							"pm.environment.set('score',score);\r",
+							"pm.globals.set('id',id);\r",
+							"pm.globals.set('score',score);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;\r",
+							"var uptScore = parseInt(responseBody);\r",
+							"var currentCustomerScore = 0;\r",
+							" pm.sendRequest('https://localhost:44300/leaderboard?start=1', function (err, res) {\r",
+							"    var data = eval(res.json());\r",
+							"    //console.log(data);\r",
+							"    for (let i = 1; i < data.length; i++) {   \r",
+							"        if(pm.globals.get('id') == data[i]['customerId']){\r",
+							"            currentCustomerScore = data[i]['score'];\r",
+							"            break;\r",
+							"        }\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"tests[\"Chek score is correct after be updated\"] = currentCustomerScore+parseInt(pm.globals.get('score'))==uptScore;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://localhost:44300/customer/{{id}}/score/{{score}}",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "44300",
+					"path": [
+						"customer",
+						"{{id}}",
+						"score",
+						"{{score}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetLeaderBoardByRank",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"function GetRandomRank(Min,Max)\r",
+							"{\r",
+							"var Range = Max - Min;\r",
+							"var Rand = Math.random();\r",
+							"return(Min + Math.round(Rand * Range));\r",
+							"}\r",
+							"\r",
+							"var start = GetRandomRank(1,10000);\r",
+							"var end = GetRandomRank(start,10000);\r",
+							"\r",
+							"pm.environment.set('start',start);\r",
+							"pm.environment.set('end',end);\r",
+							"\r",
+							"pm.globals.set('start',start);\r",
+							"pm.globals.set('end',end);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;\r",
+							"var data = JSON.parse(responseBody);\r",
+							"var jsonLength = 0;\r",
+							"for(var item in data){\r",
+							"jsonLength++;\r",
+							"}\r",
+							"var tartgetTotal = parseInt(pm.globals.get('end')) - parseInt(pm.globals.get('start')) + 1;\r",
+							"tests[\"Returns the total is correct\"] = jsonLength == tartgetTotal;\r",
+							"tests[\"Returns the start rank is correct\"] = data[0]['rank'] == parseInt(pm.globals.get('start'));\r",
+							"tests[\"Returns the end rank is correct\"] = data[jsonLength-1]['rank'] == parseInt(pm.globals.get('end'));\r",
+							"tests[\"Check that the scores and rank is correct\"] = checkScore(data);\r",
+							"\r",
+							"function checkScore(data){\r",
+							"    for (let i = 1; i < data.length; i++) {     \r",
+							"        if(data[i]['score'] > data[i-1]['score'] || data[i]['rank']<data[i-1]['rank']){\r",
+							"            console.log(data[i]);\r",
+							"            console.log(data[i-1])\r",
+							"            return false;\r",
+							"        } \r",
+							"    }\r",
+							"    return true;\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://localhost:44300/leaderboard?start={{start}}&end={{end}}",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "44300",
+					"path": [
+						"leaderboard"
+					],
+					"query": [
+						{
+							"key": "start",
+							"value": "{{start}}"
+						},
+						{
+							"key": "end",
+							"value": "{{end}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetCustomerById",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;\r",
+							"var data = JSON.parse(responseBody);\r",
+							"var targetCustomer = data[parseInt(pm.globals.get('high'))];\r",
+							"console.log(targetCustomer['customerId']);\r",
+							"var neighborsCount = 0;\r",
+							"for (let i = 0; i < data.length; i++) {\r",
+							"    if(!(data[i]['customerId'] === targetCustomer['customerId'])) neighborsCount++;\r",
+							"}\r",
+							"\r",
+							"var lowerCount = neighborsCount - parseInt(pm.globals.get('high'));\r",
+							"var higherCount = neighborsCount - parseInt(pm.globals.get('low'));\r",
+							"\r",
+							"tests[\"Check the customer is be returned\"] =!(targetCustomer ===null) && targetCustomer[\"customerId\"] == pm.globals.get('q-customerid');\r",
+							"tests[\"Check the higher count is correct\"] = higherCount = parseInt(pm.globals.get('high'));\r",
+							"tests[\"Check the lower count is correct\"] = lowerCount == parseInt(pm.globals.get('low'));\r",
+							"tests[\"Check the higher scores and rank is correct\"] = checkScore(data);\r",
+							"\r",
+							"function checkScore(data){\r",
+							"    for (let i = 1; i < data.length; i++) {     \r",
+							"        if(data[i]['score'] > data[i-1]['score'] || data[i]['rank']<data[i-1]['rank']){\r",
+							"            console.log(data[i]);\r",
+							"            console.log(data[i-1])\r",
+							"            return false;\r",
+							"        } \r",
+							"    }\r",
+							"    return true;\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"\r",
+							"    pm.sendRequest('https://localhost:44300/leaderboard?start=1', function (err, res) {\r",
+							"    var data = eval(res.json());\r",
+							"    //console.log(data);\r",
+							"    var jsonLength = 0;\r",
+							"    for(var item in data){\r",
+							"        jsonLength++;\r",
+							"    }\r",
+							"    var randomIdx = GetRandom(0,jsonLength-1);\r",
+							"    pm.environment.set(\"q-customerid\", data[randomIdx]['customerId']);\r",
+							"    pm.globals.set(\"q-customerid\", data[randomIdx]['customerId']);\r",
+							"    });\r",
+							"\r",
+							"\r",
+							"function GetRandom(Min,Max)\r",
+							"{\r",
+							"var Range = Max - Min;\r",
+							"var Rand = Math.random();\r",
+							"return(Min + Math.round(Rand * Range));\r",
+							"}\r",
+							"\r",
+							"var high = GetRandom(0,100);\r",
+							"var low = GetRandom(0,100);\r",
+							"\r",
+							"pm.environment.set('high',high);\r",
+							"pm.environment.set('low',low);\r",
+							"\r",
+							"pm.globals.set('high',high);\r",
+							"pm.globals.set('low',low);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://localhost:44300/leaderboard/{{q-customerid}}?high={{high}}&low={{low}}",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "44300",
+					"path": [
+						"leaderboard",
+						"{{q-customerid}}"
+					],
+					"query": [
+						{
+							"key": "high",
+							"value": "{{high}}"
+						},
+						{
+							"key": "low",
+							"value": "{{low}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "customerid",
+			"value": "3234"
+		}
+	]
+}
