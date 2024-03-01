@@ -1,7 +1,7 @@
 ﻿using CustomerService.Contracts;
 using CustomerService.Contracts.Dtos;
 using System.Collections.Concurrent;
-using static System.Formats.Asn1.AsnWriter;
+using System.ComponentModel;
 
 namespace CustomerService.Services
 {
@@ -16,14 +16,17 @@ namespace CustomerService.Services
         private static ConcurrentDictionary<long, CustomerDto> customerData = new ConcurrentDictionary<long, CustomerDto>();
         // Use a concurrent collection for thread safety
         private static ConcurrentBag<CustomerDto> leaderboardData = new ConcurrentBag<CustomerDto>();
+        //cache the max rank for query speed
+        private int _maxRank = 0;
 
         /// <summary>
         /// Create or update customer
         /// </summary>
         /// <param name="id">the customer id</param>
         /// <param name="score">the score</param>
+        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns>the newest score</returns>
-        public async Task<int> CreateOrUpdateAsync(long id, int score)
+        public async Task<int> CreateOrUpdateAsync(long id, int score, CancellationToken cancellationToken)
         {
             var finalScore = 0;
             try
@@ -77,13 +80,21 @@ namespace CustomerService.Services
 
             // Assign ranks
             var rank = sort_data.Count;
+            _maxRank = rank;
             foreach (var item in sort_data)
             {
                 item.Rank = rank--;
             }
 
             // Set leaderboard
-            leaderboardData = new ConcurrentBag<CustomerDto>(sort_data);
+            ConcurrentBag<CustomerDto> oldLeaderboardData = leaderboardData;
+            ConcurrentBag<CustomerDto> newLeaderboardData = new ConcurrentBag<CustomerDto>(sort_data);
+            leaderboardData = newLeaderboardData;
+            if (oldLeaderboardData != null)
+            {
+                oldLeaderboardData.Clear();
+            }
+
         }
 
         /// <summary>
@@ -91,24 +102,23 @@ namespace CustomerService.Services
         /// </summary>
         /// <param name="start">start rank</param>
         /// <param name="end">end rank</param>
+        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns>customer data set</returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="Exception"></exception>
-        public async Task<List<CustomerDto>> GetByRanksAsync(int start, int end)
+        public async Task<List<CustomerDto>> GetByRanksAsync(int start, int end, CancellationToken cancellationToken)
         {
             List<CustomerDto> result = new List<CustomerDto>();
-
             try
             {
                 if (leaderboardData is null)
                 {
                     throw new InvalidOperationException("The leaderboard data is null.");
                 }
-
                 if (start == 0 && end == 0)
                 {
-                    result = leaderboardData.ToList();
+                    return Enumerable.Empty<CustomerDto>().ToList();
                 }
                 else if (start > 0 && end == 0)
                 {
@@ -141,10 +151,11 @@ namespace CustomerService.Services
         /// <param name="id">customer id</param>
         /// <param name="high">number of neighbors whose rank is higher than the customer.</param>
         /// <param name="low">number of neighbors whose rank is lower than the customer.</param>
+        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns>customer data set</returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="Exception"></exception>
-        public async Task<List<CustomerDto>> GetByIdAndNeighborsAsync(long id, int high, int low)
+        public async Task<List<CustomerDto>> GetByIdAndNeighborsAsync(long id, int high, int low, CancellationToken cancellationToken)
         {
 
             List<CustomerDto> result = new List<CustomerDto>();
@@ -159,7 +170,11 @@ namespace CustomerService.Services
 
                 if (currentCustomer is not null)
                 {
-                    int maxRank = leaderboardData.Max(customer => customer.Rank);
+                    if (_maxRank == 0)
+                    {
+                        _maxRank = leaderboardData.Max(customer => customer.Rank);
+                    }
+                    int maxRank = _maxRank;
                     int currentRank = currentCustomer.Rank;
                     int higherRankMinValue = Math.Max(1, currentRank - high);
                     int lowerRankMaxValue = Math.Min(maxRank, currentRank + low);
@@ -179,9 +194,10 @@ namespace CustomerService.Services
         /// Get the current core by id , this method is just for test
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<int> GetScoreByIdAsync(long id)
+        public async Task<int> GetScoreByIdAsync(long id, CancellationToken cancellationToken)
         {
             var score = 0;
             try
@@ -197,6 +213,20 @@ namespace CustomerService.Services
             }
 
             return score;
+        }
+
+        /// <summary>
+        /// Get the max rank of leader board(this is a method just for test)
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<int> GetMaxRankAsync(CancellationToken cancellationToken)
+        {
+            if (_maxRank == 0)
+            {
+                _maxRank = leaderboardData.Max(customer => customer.Rank);
+            }
+            return _maxRank;
         }
 
     }

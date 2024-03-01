@@ -3,6 +3,7 @@ using CustomerService.Contracts.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Threading;
 
 namespace CustomerService.Controllers
 {
@@ -36,7 +37,7 @@ namespace CustomerService.Controllers
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<int> UpdateAsync([FromRoute] long customerid, [FromRoute][Range(-1000, 1000)] int score)
         {
-            return await _customerService.CreateOrUpdateAsync(customerid, score);
+            return await _customerService.CreateOrUpdateAsync(customerid, score, CancellationToken.None);
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace CustomerService.Controllers
         [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
         public async Task<int> GetAsync([FromRoute] long customerid)
         {
-            return await _customerService.GetScoreByIdAsync(customerid);
+            return await _customerService.GetScoreByIdAsync(customerid, CancellationToken.None);
         }
     }
 }

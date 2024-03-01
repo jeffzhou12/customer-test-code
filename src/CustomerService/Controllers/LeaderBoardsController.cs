@@ -36,7 +36,7 @@ namespace CustomerService.Controllers
         [ProducesResponseType(typeof(IEnumerable<CustomerDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<CustomerDto>> GetByRanksAsync([FromQuery, Range(1, int.MaxValue)] int start, [FromQuery, Range(1, int.MaxValue)] int end)
         {
-            return await _customerService.GetByRanksAsync(start, end);
+            return await _customerService.GetByRanksAsync(start, end, CancellationToken.None);
         }
 
         /// <summary>
@@ -48,9 +48,20 @@ namespace CustomerService.Controllers
         /// <returns>All eligible customers</returns>
         [HttpGet("{customerid}")]
         [ProducesResponseType(typeof(IEnumerable<CustomerDto>), StatusCodes.Status200OK)]
-        public async Task<IEnumerable<CustomerDto>> GetByIdAsync([FromRoute] int customerid, [FromQuery, DefaultValue(0), Range(0, int.MaxValue)] int high, [FromQuery, DefaultValue(0), Range(0, int.MaxValue)] int low)
+        public async Task<IEnumerable<CustomerDto>> GetByIdAsync([FromRoute] long customerid, [FromQuery, DefaultValue(0), Range(0, int.MaxValue)] int high, [FromQuery, DefaultValue(0), Range(0, int.MaxValue)] int low)
         {
-            return await _customerService.GetByIdAndNeighborsAsync(customerid, high, low);
+            return await _customerService.GetByIdAndNeighborsAsync(customerid, high, low, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Get max rank (This is a method for testing)
+        /// </summary>
+        /// <returns>All eligible customers</returns>
+        [HttpGet("max-rank")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<int> GetMaxRankAsync()
+        {
+            return await _customerService.GetMaxRankAsync(CancellationToken.None);
         }
     }
 }
