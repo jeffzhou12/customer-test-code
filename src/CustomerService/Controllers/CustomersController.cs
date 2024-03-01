@@ -1,4 +1,5 @@
 ﻿using CustomerService.Contracts;
+using CustomerService.Contracts.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
@@ -33,11 +34,21 @@ namespace CustomerService.Controllers
         /// <returns>Current score after update</returns>
         [HttpPost("{customerid}/score/{score}")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-        public async Task<int> UpdateAsync([FromRoute] int customerid, [FromRoute][Range(-1000, 1000)] int score)
+        public async Task<int> UpdateAsync([FromRoute] long customerid, [FromRoute][Range(-1000, 1000)] int score)
         {
             return await _customerService.CreateOrUpdateAsync(customerid, score);
         }
 
-
+        /// <summary>
+        /// Get customer score by id (This is a method for testing)
+        /// </summary>
+        /// <param name="customerid">customer id</param>
+        /// <returns>Current score</returns>
+        [HttpGet("{customerid}")]
+        [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
+        public async Task<int> GetAsync([FromRoute] long customerid)
+        {
+            return await _customerService.GetScoreByIdAsync(customerid);
+        }
     }
 }
