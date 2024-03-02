@@ -37,6 +37,7 @@ namespace CustomerService.Services
                     // Update existing customer
                     finalScore = customer.Score + score;
                     customer.Score = finalScore;
+                    customerData[id] = customer;
                 }
                 else
                 {
