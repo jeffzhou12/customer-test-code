@@ -12,6 +12,16 @@ namespace CustomerService.Services
     public class CustomersService : ICustomersService
     {
 
+
+        /*
+         * Some changes in v2:
+         * 1.Remove the useless Task.Run
+         * 2.Use thread-safe data structures
+         * 3.Asynchronously update rankings to improve concurrent performance
+         * 4.Add a cache of max rank to optimize query performance
+         * 5.Fixed data update atomicity issue
+         * */
+
         // Use a concurrent collection for thread safety
         private static ConcurrentDictionary<long, CustomerDto> customerData = new ConcurrentDictionary<long, CustomerDto>();
         // Use a concurrent collection for thread safety
