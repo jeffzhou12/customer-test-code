@@ -72,7 +72,6 @@ namespace CustomerService.Services
         /// <returns>a Task representing the asynchronous operation</returns>
         private async Task UpdateLeaderboardAsync()
         {
-            /*The calculations here can lead to performance issues that need to be handled with the help of queues*/
             var sort_data = await Task.Run(() =>
             {
                 return customerData.Where(it => it.Value > 0)
