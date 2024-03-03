@@ -73,6 +73,12 @@ namespace CustomerService.Services
         /// <returns>a Task representing the asynchronous operation</returns>
         private async Task UpdateLeaderboardAsync(CancellationToken cancellationToken)
         {
+            /*
+            In fact, if the data structure here is complex or the amount of data is too large,
+            we can use message queues to solve the calculation problem, 
+            but this will affect the data timeliness, 
+            I don't know whether it is appropriate
+             */
             var sort_data = await Task.Run(() =>
             {
                 return customerData.Where(it => it.Value > 0)
