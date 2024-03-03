@@ -24,7 +24,7 @@ namespace CustomerService.Services
 
         // Customer score collection
         private static ConcurrentDictionary<long, int> customerData = new ConcurrentDictionary<long, int>();
-        // Use a concurrent collection for thread safety
+        // Customer leaderboard collection
         private static ConcurrentBag<CustomerDto> leaderboardData = new ConcurrentBag<CustomerDto>();
         //cache the max rank for query speed
         private int _maxRank = 0;
@@ -52,6 +52,7 @@ namespace CustomerService.Services
                 else
                 {
                     // Add to customer data
+                    newScore = score;
                     customerData.TryAdd(id, score);
                 }
                 // Update ranks asynchronously
@@ -71,7 +72,7 @@ namespace CustomerService.Services
         /// <returns>a Task representing the asynchronous operation</returns>
         private async Task UpdateLeaderboardAsync()
         {
-            // Perform the sorting operation asynchronously
+            /*The calculations here can lead to performance issues that need to be handled with the help of queues*/
             var sort_data = await Task.Run(() =>
             {
                 return customerData.Where(it => it.Value > 0)
