@@ -89,11 +89,10 @@ namespace CustomerService.Services
             // Assign ranks
             var rank = sort_data.Count;
             _maxRank = rank;
-            foreach (var item in sort_data)
+            Parallel.ForEach(sort_data, item =>
             {
                 item.Rank = rank--;
-            }
-
+            });
             // Set leaderboard
             ConcurrentBag<CustomerDto> oldLeaderboardData = leaderboardData;
             ConcurrentBag<CustomerDto> newLeaderboardData = new ConcurrentBag<CustomerDto>(sort_data);
