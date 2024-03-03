@@ -22,8 +22,8 @@ namespace CustomerService.Services
          * 5.Fixed data update atomicity issue
          * */
 
-        // Use a concurrent collection for thread safety
-        private static ConcurrentDictionary<long, CustomerDto> customerData = new ConcurrentDictionary<long, CustomerDto>();
+        // Customer score collection
+        private static ConcurrentDictionary<long, int> customerData = new ConcurrentDictionary<long, int>();
         // Use a concurrent collection for thread safety
         private static ConcurrentBag<CustomerDto> leaderboardData = new ConcurrentBag<CustomerDto>();
         //cache the max rank for query speed
@@ -38,31 +38,22 @@ namespace CustomerService.Services
         /// <returns>the newest score</returns>
         public async Task<int> CreateOrUpdateAsync(long id, int score, CancellationToken cancellationToken)
         {
-            var finalScore = 0;
+            var newScore = 0;
             try
             {
+                var currentScore = 0;
                 // Check if customer exists
-                if (customerData.TryGetValue(id, out CustomerDto customer))
+                if (customerData.TryGetValue(id, out currentScore))
                 {
                     // Update existing customer
-                    finalScore = customer.Score + score;
-                    customer.Score = finalScore;
-                    customerData[id] = customer;
+                    newScore = currentScore + score;
+                    customerData[id] = newScore;
                 }
                 else
                 {
-                    // Create new customer
-                    customer = new CustomerDto
-                    {
-                        CustomerId = id,
-                        Score = score
-                    };
-                    finalScore = score;
-
                     // Add to customer data
-                    customerData.TryAdd(id, customer);
+                    customerData.TryAdd(id, score);
                 }
-
                 // Update ranks asynchronously
                 await UpdateLeaderboardAsync();
             }
@@ -71,7 +62,7 @@ namespace CustomerService.Services
                 throw new Exception("An error occurred while updating customer score.", ex);
             }
 
-            return finalScore;
+            return newScore;
         }
 
         /// <summary>
@@ -83,9 +74,14 @@ namespace CustomerService.Services
             // Perform the sorting operation asynchronously
             var sort_data = await Task.Run(() =>
             {
-                return customerData.Values.Where(it => it.Score > 0)
-                                           .OrderBy(it => it.Score)
-                                           .ThenByDescending(it => it.CustomerId)
+                return customerData.Where(it => it.Value > 0)
+                                           .OrderBy(it => it.Value)
+                                           .ThenByDescending(it => it.Key)
+                                           .Select(it => new CustomerDto()
+                                           {
+                                               CustomerId = it.Key,
+                                               Score = it.Value
+                                           })
                                            .ToList();
             });
 
@@ -101,7 +97,7 @@ namespace CustomerService.Services
             ConcurrentBag<CustomerDto> oldLeaderboardData = leaderboardData;
             ConcurrentBag<CustomerDto> newLeaderboardData = new ConcurrentBag<CustomerDto>(sort_data);
             leaderboardData = newLeaderboardData;
-            if (oldLeaderboardData != null)
+            if (!oldLeaderboardData.IsEmpty)
             {
                 oldLeaderboardData.Clear();
             }
@@ -213,10 +209,7 @@ namespace CustomerService.Services
             var score = 0;
             try
             {
-                if (customerData.TryGetValue(id, out CustomerDto customer))
-                {
-                    score = customer.Score;
-                }
+                customerData.TryGetValue(id, out score);
             }
             catch (Exception ex)
             {
