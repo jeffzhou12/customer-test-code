@@ -56,7 +56,7 @@ namespace CustomerService.Services
                     customerData.TryAdd(id, score);
                 }
                 // Update ranks asynchronously
-                await UpdateLeaderboardAsync();
+                await UpdateLeaderboardAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -69,8 +69,9 @@ namespace CustomerService.Services
         /// <summary>
         /// Updates the leaderboard asynchronously by sorting the customer data
         /// </summary>
+        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns>a Task representing the asynchronous operation</returns>
-        private async Task UpdateLeaderboardAsync()
+        private async Task UpdateLeaderboardAsync(CancellationToken cancellationToken)
         {
             var sort_data = await Task.Run(() =>
             {
@@ -83,7 +84,7 @@ namespace CustomerService.Services
                                                Score = it.Value
                                            })
                                            .ToList();
-            });
+            }, cancellationToken);
 
             // Assign ranks
             var rank = sort_data.Count;
