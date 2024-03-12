@@ -39,17 +39,5 @@ namespace CustomerService.Controllers
         {
             return await _customerService.CreateOrUpdateAsync(customerid, score, CancellationToken.None);
         }
-
-        /// <summary>
-        /// Get customer score by id (This is a method for testing)
-        /// </summary>
-        /// <param name="customerid">customer id</param>
-        /// <returns>Current score</returns>
-        [HttpGet("{customerid}")]
-        [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
-        public async Task<int> GetAsync([FromRoute] long customerid)
-        {
-            return await _customerService.GetScoreByIdAsync(customerid, CancellationToken.None);
-        }
     }
 }

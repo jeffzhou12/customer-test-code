@@ -1,7 +1,5 @@
 ﻿using CustomerService.Contracts;
 using CustomerService.Contracts.Dtos;
-using System.Collections.Concurrent;
-using System.ComponentModel;
 
 namespace CustomerService.Services
 {
@@ -12,22 +10,9 @@ namespace CustomerService.Services
     public class CustomersService : ICustomersService
     {
 
-
-        /*
-         * Some changes in v2:
-         * 1.Remove the useless Task.Run
-         * 2.Use thread-safe data structures
-         * 3.Asynchronously update rankings to improve concurrent performance
-         * 4.Add a cache of max rank to optimize query performance
-         * 5.Fixed data update atomicity issue
-         * */
-
-        // Customer score collection
-        private static ConcurrentDictionary<long, int> customerData = new ConcurrentDictionary<long, int>();
+        private static readonly object locker = new object();
         // Customer leaderboard collection
-        private static ConcurrentBag<CustomerDto> leaderboardData = new ConcurrentBag<CustomerDto>();
-        //cache the max rank for query speed
-        private int _maxRank = 0;
+        private static List<CustomerDto> leaderboardsData = new List<CustomerDto>();
 
         /// <summary>
         /// Create or update customer
@@ -39,69 +24,72 @@ namespace CustomerService.Services
         public async Task<int> CreateOrUpdateAsync(long id, int score, CancellationToken cancellationToken)
         {
             var newScore = 0;
-            try
+            lock (locker)
             {
-                var currentScore = 0;
-                // Check if customer exists
-                if (customerData.TryGetValue(id, out currentScore))
+                try
                 {
-                    // Update existing customer
-                    newScore = currentScore + score;
-                    customerData[id] = newScore;
+
+                    var existedData = leaderboardsData.FirstOrDefault(it => it.CustomerId == id);
+                    if (existedData is not null)
+                    {
+                        newScore = existedData.Score + score;
+                        //remove the customer from leader board
+                        leaderboardsData.Remove(existedData);
+                    }
+                    else
+                    {
+                        newScore = score;
+                    }
+
+                    //add customer into the leader board
+                    if (newScore > 0)
+                    {
+                        var insertIndex = 0;
+                        //find tht latest record with same score with new score and id less than new id
+                        var latestSameScoreIndex = leaderboardsData.FindLastIndex(it => it.Score == newScore && it.CustomerId < id);
+
+                        if (latestSameScoreIndex >= 0)
+                        {
+                            insertIndex = latestSameScoreIndex + 1;
+                        }
+                        else
+                        {
+                            //find the first one customer index with same score (case when all with same score customers'id great than target id)
+                            var fistSameScoreIndex = leaderboardsData.FindIndex(it => it.Score == newScore);
+                            if (fistSameScoreIndex >= 0)
+                            {
+                                insertIndex = fistSameScoreIndex;
+                            }
+                            else
+                            {
+                                //find the first customer with the score less than new score
+                                var latestIndex = leaderboardsData.FindIndex(it => it.Score < newScore);
+                                if (latestIndex < 0)
+                                {
+                                    insertIndex = leaderboardsData.Count;
+                                }
+                                else
+                                {
+                                    insertIndex = latestIndex;
+                                }
+                            }
+                        }
+
+                        leaderboardsData.Insert(insertIndex, new CustomerDto
+                        {
+                            CustomerId = id,
+                            Score = newScore
+                        });
+                    }
+
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Add to customer data
-                    newScore = score;
-                    customerData.TryAdd(id, score);
+                    throw new Exception("An error occurred while updating customer score.", ex);
                 }
-                // Update ranks asynchronously
-                await UpdateLeaderboardAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("An error occurred while updating customer score.", ex);
             }
 
             return newScore;
-        }
-
-        /// <summary>
-        /// Updates the leaderboard asynchronously by sorting the customer data
-        /// </summary>
-        /// <param name="cancellationToken">cancellationToken</param>
-        /// <returns>a Task representing the asynchronous operation</returns>
-        private async Task UpdateLeaderboardAsync(CancellationToken cancellationToken)
-        {
-            var sort_data = await Task.Run(() =>
-            {
-                return customerData.Where(it => it.Value > 0)
-                                           .OrderBy(it => it.Value)
-                                           .ThenByDescending(it => it.Key)
-                                           .Select(it => new CustomerDto()
-                                           {
-                                               CustomerId = it.Key,
-                                               Score = it.Value
-                                           })
-                                           .ToList();
-            }, cancellationToken);
-
-            // Assign ranks
-            var rank = sort_data.Count;
-            _maxRank = rank;
-            Parallel.ForEach(sort_data, item =>
-            {
-                item.Rank = rank--;
-            });
-            // Set leaderboard
-            ConcurrentBag<CustomerDto> oldLeaderboardData = leaderboardData;
-            ConcurrentBag<CustomerDto> newLeaderboardData = new ConcurrentBag<CustomerDto>(sort_data);
-            leaderboardData = newLeaderboardData;
-            if (!oldLeaderboardData.IsEmpty)
-            {
-                oldLeaderboardData.Clear();
-            }
-
         }
 
         /// <summary>
@@ -119,29 +107,23 @@ namespace CustomerService.Services
             List<CustomerDto> result = new List<CustomerDto>();
             try
             {
-                if (leaderboardData is null)
-                {
-                    throw new InvalidOperationException("The leaderboard data is null.");
-                }
-                if (start == 0 && end == 0)
+                if (leaderboardsData is null)
                 {
                     return Enumerable.Empty<CustomerDto>().ToList();
                 }
-                else if (start > 0 && end == 0)
+
+                if (start == 0) start = 1;
+                if (end == 0) end = leaderboardsData.Count;
+                if (end > leaderboardsData.Count) end = leaderboardsData.Count;
+
+                result = leaderboardsData.GetRange(start - 1, end - start + 1);
+
+                if (result.Count > 0)
                 {
-                    result = leaderboardData.Where(it => it.Rank >= start).ToList();
-                }
-                else if (start == 0 && end > 0)
-                {
-                    result = leaderboardData.Where(it => it.Rank <= end).ToList();
-                }
-                else if (start <= end)
-                {
-                    result = leaderboardData.Where(it => it.Rank >= start && it.Rank <= end).ToList();
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException("The start index must be less than or equal to the end index.");
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        result[i].Rank = i + start;
+                    }
                 }
             }
             catch (Exception ex)
@@ -168,25 +150,18 @@ namespace CustomerService.Services
             List<CustomerDto> result = new List<CustomerDto>();
             try
             {
-                if (leaderboardData is null)
+                var total = leaderboardsData.Count;
+                if (total > 0)
                 {
-                    throw new InvalidOperationException("The leaderboard data is null.");
-                }
+                    var currentCustomer = leaderboardsData.FirstOrDefault(it => it.CustomerId == id);
 
-                CustomerDto currentCustomer = leaderboardData.FirstOrDefault(customer => customer.CustomerId == id);
-
-                if (currentCustomer is not null)
-                {
-                    if (_maxRank == 0)
+                    if (currentCustomer is not null)
                     {
-                        _maxRank = leaderboardData.Max(customer => customer.Rank);
+                        var currentIndex = leaderboardsData.IndexOf(currentCustomer);
+                        var start = currentIndex - high < 0 ? 0 : currentIndex - high + 1;
+                        var end = currentIndex + low > total ? total : currentIndex + low + 1;
+                        result = await GetByRanksAsync(start, end, cancellationToken);
                     }
-                    int maxRank = _maxRank;
-                    int currentRank = currentCustomer.Rank;
-                    int higherRankMinValue = Math.Max(1, currentRank - high);
-                    int lowerRankMaxValue = Math.Min(maxRank, currentRank + low);
-
-                    result = leaderboardData.Where(customer => customer.Rank >= higherRankMinValue && customer.Rank <= lowerRankMaxValue).ToList();
                 }
             }
             catch (Exception ex)
@@ -195,42 +170,6 @@ namespace CustomerService.Services
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Get the current core by id , this method is just for test
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="cancellationToken">cancellationToken</param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        public async Task<int> GetScoreByIdAsync(long id, CancellationToken cancellationToken)
-        {
-            var score = 0;
-            try
-            {
-                customerData.TryGetValue(id, out score);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("An error occurred while updating customer score.", ex);
-            }
-
-            return score;
-        }
-
-        /// <summary>
-        /// Get the max rank of leader board(this is a method just for test)
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public async Task<int> GetMaxRankAsync(CancellationToken cancellationToken)
-        {
-            if (_maxRank == 0)
-            {
-                _maxRank = leaderboardData.Max(customer => customer.Rank);
-            }
-            return _maxRank;
         }
 
     }

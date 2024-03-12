@@ -15,19 +15,22 @@
             overflow-y: scroll;
             -webkit-overflow-scrolling: touch;
         }
-            .table_info{
-                width:55%;
-            }
-        .table_info table{
-            width: 100%;
+
+        .table_info {
+            width: 55%;
         }
-            .table_info table thead,
-            .tbd tr {
-                display: table;
+
+            .table_info table {
                 width: 100%;
-                table-layout: fixed;
-                text-align:left;
             }
+
+                .table_info table thead,
+                .tbd tr {
+                    display: table;
+                    width: 100%;
+                    table-layout: fixed;
+                    text-align: left;
+                }
     </style>
     <script>
         function loadLeaderBoardByRank() {
@@ -124,8 +127,8 @@
         function initCustomers() {
             var total = document.getElementById('init-number').value;
             for (var i = 0; i < total; i++) {
-                var min = 1;
-                var max = total * 10;
+                var min = 100000;
+                var max = 999999999;
                 var randomId = Math.floor(Math.random() * (max - min + 1)) + min;
 
                 var minScore = -1000;

@@ -52,16 +52,5 @@ namespace CustomerService.Controllers
         {
             return await _customerService.GetByIdAndNeighborsAsync(customerid, high, low, CancellationToken.None);
         }
-
-        /// <summary>
-        /// Get max rank (This is a method for testing)
-        /// </summary>
-        /// <returns>All eligible customers</returns>
-        [HttpGet("max-rank")]
-        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-        public async Task<int> GetMaxRankAsync()
-        {
-            return await _customerService.GetMaxRankAsync(CancellationToken.None);
-        }
     }
 }
